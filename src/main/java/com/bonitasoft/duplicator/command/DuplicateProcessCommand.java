@@ -35,6 +35,8 @@ public class DuplicateProcessCommand implements Callable<Integer> {
 
     private final static Logger LOGGER = Logger.getLogger(DuplicateProcessCommand.class.getName());
 
+    private final String duplicateStr = "_copy-";
+
     @ParentCommand
     private DuplicateCommand duplicateCommand;
 
@@ -47,7 +49,7 @@ public class DuplicateProcessCommand implements Callable<Integer> {
         Path projectPath = duplicateCommand.getProject().toPath();
         Path diagramsPath = projectPath.resolve("diagrams");
         try {
-            for (File diagram : diagramsPath.toFile().listFiles(file -> file.getName().endsWith(".proc"))) {
+            for (File diagram : diagramsPath.toFile().listFiles(file -> file.getName().endsWith(".proc") && !file.getName().contains(duplicateStr))) {
                 LOGGER.info(() -> String.format("Duplicating %s...", diagram.getName()));
                 duplicateDiagram(diagramsPath, diagram, duplicateCommand.getNumber());
             }
@@ -61,7 +63,7 @@ public class DuplicateProcessCommand implements Callable<Integer> {
 
     protected void duplicateDiagram(Path diagramsPath, File diagram, int numberOfDuplicates) throws IOException {
         for (int i = 1; i <= numberOfDuplicates; i++) {
-            String newName = diagram.getName().replace(".proc", "") + "_copy-" + i + ".proc";
+            String newName = diagram.getName().replace(".proc", "") + duplicateStr + i + ".proc";
             File copy = diagramsPath.resolve(newName).toFile();
             FileUtils.copyFile(diagram, copy);
 
