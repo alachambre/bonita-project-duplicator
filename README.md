@@ -1,3 +1,5 @@
+[![Actions Status](https://github.com/alachambre/bonita-project-duplicator/workflows/Build/badge.svg)](https://github.com/alachambre/bonita-project-duplicator/actions?query=workflow%3ABuild)
+
 ! - This project is in progress -
 
 # bonita-project-duplicator
