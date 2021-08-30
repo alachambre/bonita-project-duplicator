@@ -49,7 +49,7 @@ public class DuplicateProcessCommand implements Callable<Integer> {
         try {
             for (File diagram : diagramsPath.toFile().listFiles(file -> file.getName().endsWith(".proc"))) {
                 LOGGER.info(() -> String.format("Duplicating %s...", diagram.getName()));
-                duplicateDiagram(diagramsPath, diagram);
+                duplicateDiagram(diagramsPath, diagram, duplicateCommand.getNumber());
             }
             return 0;
         } catch (IOException e) {
@@ -59,8 +59,8 @@ public class DuplicateProcessCommand implements Callable<Integer> {
         }
     }
 
-    private void duplicateDiagram(Path diagramsPath, File diagram) throws IOException {
-        for (int i = 1; i <= duplicateCommand.getNumber(); i++) {
+    protected void duplicateDiagram(Path diagramsPath, File diagram, int numberOfDuplicates) throws IOException {
+        for (int i = 1; i <= numberOfDuplicates; i++) {
             String newName = diagram.getName().replace(".proc", "") + "_copy-" + i + ".proc";
             File copy = diagramsPath.resolve(newName).toFile();
             FileUtils.copyFile(diagram, copy);
