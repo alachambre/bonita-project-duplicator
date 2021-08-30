@@ -10,7 +10,7 @@ Duplicate content in a Bonita project to generate fat projects, for performance 
 
 `./mvnw clean package`
 
--> the Jar _bonita-project-duplicator-<version>-jar-with-dependencies.jar_ is created in the target folder
+-> the Jar _bonita-project-duplicator-\<version\>-jar-with-dependencies.jar_ is created in the target folder
 
 ## Usage
 
