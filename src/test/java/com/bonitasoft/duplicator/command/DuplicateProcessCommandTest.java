@@ -15,6 +15,8 @@
 package com.bonitasoft.duplicator.command;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.spy;
 
 import java.io.File;
 import java.nio.file.Files;
@@ -32,8 +34,7 @@ public class DuplicateProcessCommandTest {
 
     private static final String PROJECT_NAME = "bonita-project";
     private static final String DIAGRAM_FOLDER = "diagrams";
-    private static final String DIAGRAM_NAME = "MyDiagram-1.0.proc";
-    private static final String DUPLICATED_DIAGRAM_NAME = "MyDiagram-1.0_copy-1.proc";
+    private static final String DUPLICATED_DIAGRAM_NAME = "MyDiagram-1.0_generatedCopy1.proc";
 
     private static Path projectPath;
 
@@ -47,25 +48,30 @@ public class DuplicateProcessCommandTest {
     public void init() throws Exception {
         // We duplicate the diagram folder, so we only have to delete the duplicated folder in the clean operation
         var diagramFolder = projectPath.resolve(DIAGRAM_FOLDER);
-        var duplicatedDiagramFolder = projectPath.resolve(DIAGRAM_FOLDER + "_duplicate");
+        var duplicatedDiagramFolder = getDuplicatedDiagramFolder();
 
         FileUtils.copyDirectory(diagramFolder.toFile(), duplicatedDiagramFolder.toFile());
     }
 
     @AfterEach
     public void clean() {
-        var duplicatedDiagramFolder = projectPath.resolve(DIAGRAM_FOLDER + "_duplicate").toFile();
+        var duplicatedDiagramFolder = getDuplicatedDiagramFolder().toFile();
         Arrays.asList(duplicatedDiagramFolder.listFiles()).forEach(File::delete);
         duplicatedDiagramFolder.delete();
     }
 
     @Test
     public void should_duplicate_diagrams() throws Exception {
-        var duplicateProcessCommand = new DuplicateProcessCommand();
-        var diagramFolder = projectPath.resolve(DIAGRAM_FOLDER + "_duplicate");
+        var duplicateProcessCommand = spy(new DuplicateProcessCommand());
+        var diagramFolder = getDuplicatedDiagramFolder();
+
+        doReturn(false).when(duplicateProcessCommand).cleanBeforeDuplicate();
+        doReturn(1).when(duplicateProcessCommand).getNumberOfDuplicate();
+        doReturn(diagramFolder).when(duplicateProcessCommand).getFolder();
+
         assertThat(diagramFolder.toFile().listFiles()).hasSize(1);
 
-        duplicateProcessCommand.duplicateDiagram(diagramFolder, diagramFolder.resolve(DIAGRAM_NAME).toFile(), 1);
+        duplicateProcessCommand.call();
         assertThat(diagramFolder.toFile().listFiles()).hasSize(2);
 
         File duplicatedDiagramFile = diagramFolder.resolve(DUPLICATED_DIAGRAM_NAME).toFile();
@@ -89,6 +95,30 @@ public class DuplicateProcessCommandTest {
         try (Stream<String> lines = Files.lines(duplicatedDiagramFile.toPath())) {
             assertThat(lines.anyMatch(secondPoolNewName::equals));
         }
+    }
+
+    @Test
+    public void should_clean_existing_duplicates() throws Exception {
+        var duplicateProcessCommand = spy(new DuplicateProcessCommand());
+        var diagramFolder = getDuplicatedDiagramFolder();
+
+        doReturn(true).when(duplicateProcessCommand).cleanBeforeDuplicate();
+        doReturn(1).when(duplicateProcessCommand).getNumberOfDuplicate();
+        doReturn(diagramFolder).when(duplicateProcessCommand).getFolder();
+
+        duplicateProcessCommand.call();
+        assertThat(diagramFolder.toFile().listFiles()).hasSize(2);
+
+        duplicateProcessCommand.call();
+        assertThat(diagramFolder.toFile().listFiles()).hasSize(2);
+
+        doReturn(false).when(duplicateProcessCommand).cleanBeforeDuplicate();
+        duplicateProcessCommand.call();
+        assertThat(diagramFolder.toFile().listFiles()).hasSizeGreaterThan(2);
+    }
+
+    private Path getDuplicatedDiagramFolder() {
+        return projectPath.resolve(DIAGRAM_FOLDER + "_duplicate");
     }
 
 }

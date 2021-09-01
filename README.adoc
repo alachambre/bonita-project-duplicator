@@ -1,0 +1,56 @@
+= bonita-project-duplicator
+
+[![Actions Status](https://github.com/alachambre/bonita-project-duplicator/workflows/Build/badge.svg)](https://github.com/alachambre/bonita-project-duplicator/actions?query=workflow%3ABuild)
+
+Duplicate content in a Bonita project to generate fat projects, for performance testing
+
+[NOTE]
+====
+This project is in progress
+====
+
+== Build the project
+
+----
+./mvnw clean package
+----
+
+-> the Jar _bonita-project-duplicator-\<version\>-jar-with-dependencies.jar_ is created in the target folder
+
+== Usage
+
+**Only process duplication is supported for now.**
+
+[source, bash]
+----
+java -jar bonita-project-duplicator-<VERSION>-jar-with-dependencies.jar -p <PATH TO PROJECT> -n <NUMBER OF DUPLICATE> -c process
+
+# Example: 
+java -jar bonita-project-duplicator-1.0.0-SNAPSHOT-jar-with-dependencies.jar -p BonitaStudioCommunity-2021.2-SNAPSHOT.app/Contents/Eclipse/workspace/My\ project -n 5 -c process
+----
+
+=== Options
+
+[cols="1,1,1,1"]
+|===
+|Option |Value |Description |Mandatory
+
+|-p, --project
+|<path> _(String)_
+|Path to the Bonita project to duplicate
+|true
+
+|-n, --number
+|value _(int, > 0)_
+|Number of duplication
+|true
+
+|-c, --clean
+|
+|Clean existing duplicates before to perform duplications
+|false
+|===
+  
+
+
+
