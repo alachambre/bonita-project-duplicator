@@ -15,59 +15,82 @@
 package com.bonitasoft.duplicator.command;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.concurrent.Callable;
 
-import picocli.CommandLine.Command;
-import picocli.CommandLine.Model.CommandSpec;
-import picocli.CommandLine.Option;
-import picocli.CommandLine.ParameterException;
-import picocli.CommandLine.Spec;
+import org.apache.commons.io.FileUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-@Command(
-        name = "duplicate",
-        description = "Duplicate an artifact of a Bonita project",
-        subcommands = {
-                DuplicateProcessCommand.class
-        // DuplicateFormCommand.class
-        })
-public class DuplicateCommand implements Callable<Integer> {
+public abstract class DuplicateCommand implements Callable<Integer> {
 
-    @Spec
-    CommandSpec spec;
+    private final static Logger LOGGER = LoggerFactory.getLogger(DuplicateCommand.class);
 
-    private File project;
-    private int number;
+    protected static final String COPY_SUFFIX = "_generatedCopy";
 
     @Override
     public Integer call() throws Exception {
-        return 0; // OK
-    }
-
-    @Option(names = { "-p", "--project" }, description = "Bonita project folder")
-    public void setProject(File project) {
-        if (!project.exists() && !project.isDirectory()) {
-            throw new ParameterException(spec.commandLine(),
-                    String.format("Invalid value '%s' for option '--project': " +
-                            "A valid Bonita project folder is expected.", project.getAbsolutePath()));
+        if (cleanBeforeDuplicate() && !clean()) {
+            return 1; // exit with error
         }
-        this.project = project;
+        return duplicate();
     }
 
-    @Option(names = { "-n", "--number" }, description = "Number of duplication")
-    public void setNumber(int number) {
-        if (number <= 0) {
-            throw new ParameterException(spec.commandLine(),
-                    String.format("Invalid value '%s' for option '--number': " +
-                            "A positive integer is expected.", number));
+    protected abstract Path getFolder();
+
+    protected abstract String getFileExtension();
+
+    protected abstract boolean cleanBeforeDuplicate();
+
+    protected abstract int getNumberOfDuplicate();
+
+    protected abstract void updateDuplicatedFileContent(File duplicate, int titeration) throws IOException;
+
+    private boolean clean() {
+        LOGGER.info("Starting clean operation...");
+        Path folderPath = getFolder();
+        LOGGER.info("----------");
+        for (File file : folderPath.toFile().listFiles(file -> file.getName().contains(COPY_SUFFIX))) {
+            LOGGER.info(String.format("Deleting '%s'...", file.getName()));
+            if (!file.delete()) {
+                LOGGER.error(String.format("File '%s' has not been deleted correctly.", file.getName()));
+                return false;
+            }
         }
-        this.number = number;
+        LOGGER.info("----------");
+        LOGGER.info("Clean operation completed successfully!\n");
+        return true;
     }
 
-    public File getProject() {
-        return project;
+    private Integer duplicate() {
+        Path folderPath = getFolder();
+        try {
+            for (File file : folderPath.toFile().listFiles(file -> file.getName().endsWith(getFileExtension()))) {
+                LOGGER.info(String.format("Duplicating '%s'...", file.getName()));
+                LOGGER.info("----------");
+                for (int i = 1; i <= getNumberOfDuplicate(); i++) {
+                    String newName = createNewName(file.getName(), i);
+                    File copy = folderPath.resolve(newName).toFile();
+                    FileUtils.copyFile(file, copy);
+                    LOGGER.info(String.format("%s created, updating content...", copy.getName()));
+                    updateDuplicatedFileContent(copy, i);
+                }
+                LOGGER.info("----------");
+                LOGGER.info(String.format("'%s' has been successfully duplicated %s times!\n", file.getName(),
+                        getNumberOfDuplicate()));
+            }
+            return 0;
+        } catch (IOException e) {
+            e.printStackTrace();
+            LOGGER.error(e.getMessage());
+            return 1;
+        }
     }
 
-    public int getNumber() {
-        return number;
+    private String createNewName(String oldName, int iteration) {
+        String nameWithoutExtension = oldName.replace(getFileExtension(), "");
+        return String.format("%s%s%s%s", nameWithoutExtension, COPY_SUFFIX, iteration, getFileExtension());
     }
+
 }

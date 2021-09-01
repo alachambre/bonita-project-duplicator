@@ -19,62 +19,59 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.apache.commons.io.FileUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import picocli.CommandLine.Command;
 import picocli.CommandLine.ParentCommand;
 
 @Command(name = "process",
         description = "Duplicate diagrams and processes in a Bonita project")
-public class DuplicateProcessCommand implements Callable<Integer> {
+public class DuplicateProcessCommand extends DuplicateCommand {
 
-    private final static Logger LOGGER = Logger.getLogger(DuplicateProcessCommand.class.getName());
+    private final static Logger LOGGER = LoggerFactory.getLogger(DuplicateProcessCommand.class);
+
+    private static final String DIAGRAMS_FOLDER = "diagrams";
+    private static final String DIAGRAM_EXTENSION = ".proc";
 
     @ParentCommand
-    private DuplicateCommand duplicateCommand;
+    private MainCommand parentCommand;
 
     @Override
-    public Integer call() throws Exception {
-        return duplicateDiagrams();
+    protected boolean cleanBeforeDuplicate() {
+        return parentCommand.cleanBeforeDuplicate();
     }
 
-    private Integer duplicateDiagrams() {
-        Path projectPath = duplicateCommand.getProject().toPath();
-        Path diagramsPath = projectPath.resolve("diagrams");
-        try {
-            for (File diagram : diagramsPath.toFile().listFiles(file -> file.getName().endsWith(".proc"))) {
-                LOGGER.info(() -> String.format("Duplicating %s...", diagram.getName()));
-                duplicateDiagram(diagramsPath, diagram, duplicateCommand.getNumber());
-            }
-            return 0;
-        } catch (IOException e) {
-            e.printStackTrace();
-            LOGGER.severe(e.getMessage());
-            return 1;
-        }
+    @Override
+    protected int getNumberOfDuplicate() {
+        return parentCommand.getNumber();
     }
 
-    protected void duplicateDiagram(Path diagramsPath, File diagram, int numberOfDuplicates) throws IOException {
-        for (int i = 1; i <= numberOfDuplicates; i++) {
-            String newName = diagram.getName().replace(".proc", "") + "_copy-" + i + ".proc";
-            File copy = diagramsPath.resolve(newName).toFile();
-            FileUtils.copyFile(diagram, copy);
-
-            Stream<String> lines = Files.lines(copy.toPath());
-            String num = Integer.toString(i);
-            String diagramRegex = "(<process:MainProcess.*name=\\\")([a-zA-Z]+)(\\\".*>)";
-            String processRegex = "(<elements.*xmi:type=\\\"process:Pool\\\".*name=\\\")(.+)(\\\".*>)";
-            List<String> replaced = lines
-                    .map(line -> line.replaceAll(diagramRegex, "$1$2" + num + "$3"))
-                    .map(line -> line.replaceAll(processRegex, "$1$2" + num + "$3"))
-                    .collect(Collectors.toList());
-            Files.write(copy.toPath(), replaced);
-            lines.close();
-        }
+    @Override
+    protected Path getFolder() {
+        return parentCommand.getProject().toPath().resolve(DIAGRAMS_FOLDER);
     }
+
+    @Override
+    protected String getFileExtension() {
+        return DIAGRAM_EXTENSION;
+    }
+
+    @Override
+    protected void updateDuplicatedFileContent(File duplicate, int iteration) throws IOException {
+        Stream<String> lines = Files.lines(duplicate.toPath());
+        String num = Integer.toString(iteration);
+        String diagramRegex = "(<process:MainProcess.*name=\\\")([a-zA-Z]+)(\\\".*>)";
+        String processRegex = "(<elements.*xmi:type=\\\"process:Pool\\\".*name=\\\")(.+)(\\\".*>)";
+        List<String> replaced = lines
+                .map(line -> line.replaceAll(diagramRegex, "$1$2" + num + "$3"))
+                .map(line -> line.replaceAll(processRegex, "$1$2" + num + "$3"))
+                .collect(Collectors.toList());
+        Files.write(duplicate.toPath(), replaced);
+        lines.close();
+    }
+
 }

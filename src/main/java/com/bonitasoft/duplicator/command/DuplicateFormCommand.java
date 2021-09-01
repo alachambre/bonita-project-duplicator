@@ -24,7 +24,7 @@ import picocli.CommandLine.ParentCommand;
 public class DuplicateFormCommand implements Callable<Integer> {
 
     @ParentCommand
-    private DuplicateCommand duplicateCommand;
+    private MainCommand duplicateCommand;
 
     @Override
     public Integer call() throws Exception {
