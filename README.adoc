@@ -1,6 +1,9 @@
 = bonita-project-duplicator
 
-[![Actions Status](https://github.com/alachambre/bonita-project-duplicator/workflows/Build/badge.svg)](https://github.com/alachambre/bonita-project-duplicator/actions?query=workflow%3ABuild)
+:uri-build-status: https://github.com/alachambre/bonita-project-duplicator/actions?query=workflow%3ABuild
+:img-build-status: https://github.com/alachambre/bonita-project-duplicator/workflows/Build/badge.svg
+
+image:{img-build-status}[Build Status Badge,link={uri-build-status}]
 
 Duplicate content in a Bonita project to generate fat projects, for performance testing
 
