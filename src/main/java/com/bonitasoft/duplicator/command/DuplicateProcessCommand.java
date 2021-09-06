@@ -65,7 +65,7 @@ public class DuplicateProcessCommand extends DuplicateCommand {
         Stream<String> lines = Files.lines(duplicate.toPath());
         String num = Integer.toString(iteration);
         String diagramRegex = "(<process:MainProcess.*name=\\\")([a-zA-Z]+)(\\\".*>)";
-        String processRegex = "(<elements.*xmi:type=\\\"process:Pool\\\".*name=\\\")(.+)(\\\".*>)";
+        String processRegex = "(<elements.*xmi:type=\\\"process:Pool\\\".*name=\\\")([^\\\"]+)(\\\".*>)";
         List<String> replaced = lines
                 .map(line -> line.replaceAll(diagramRegex, "$1$2" + num + "$3"))
                 .map(line -> line.replaceAll(processRegex, "$1$2" + num + "$3"))
